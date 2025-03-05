@@ -1,0 +1,22 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            // "args": ["--config", "configs/marl/marl_last_two_detections.yaml"]
+            // "args": ["--config", "configs/marl/gnn_last_k_detects_a_star.yaml"]
+            // "args": ["--config", "configs/IROS_2023/sel_mlp.yaml"]
+            // "args": ["--config", "configs/IROS_2023/categorical_mi.yaml"]
+            // "args": ["--load_from_file", "false", "--eval_mode", "mixture"]
+        
+        }
+    ]
+}

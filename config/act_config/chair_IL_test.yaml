@@ -1,0 +1,15 @@
+eval: False
+onscreen_render: False
+ckpt_dir: ./CoRL_2024_logs/ACT/wheelchair
+policy_class: ACT 
+task_name: sim_transfer_cube_scripted
+kl_weight: 10 
+detection_size: 32 
+chunk_size: 34 
+hidden_dim: 512 
+batch_size: 8 
+dim_feedforward: 3200
+seed: 0
+num_epochs: 301
+lr: 0.00001
+temporal_agg: False

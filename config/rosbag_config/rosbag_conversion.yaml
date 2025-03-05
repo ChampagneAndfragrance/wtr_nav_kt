@@ -1,0 +1,13 @@
+stage: test # train, test, sim
+folder_name: IBDF
+train_option: chair # ball_chair, ball, chair, dynamic
+horizon: 18 # 34, 18
+max_detection_num: 32
+max_trajectory_length: 115
+max_path_length: 100 # 105, 40
+n_timesteps: 10
+show: True
+condition_mode: post # pre, post
+is_sim: False
+replan_period: 15
+pred_mode: 2d

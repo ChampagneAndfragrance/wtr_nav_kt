@@ -1,0 +1,6 @@
+task_name: sim_transfer_cube_scripted
+dataset_dir: ./act-main/dataset/
+num_episodes: 50
+onscreen_render: False
+
+

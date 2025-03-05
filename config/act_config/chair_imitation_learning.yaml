@@ -1,0 +1,30 @@
+stage: train # eval, train
+onscreen_render: False
+# ckpt_dir: ./CoRL_2024_logs/ACT/wheelchair
+policy_class: ACT 
+task_name: sim_wheelchair_nav
+kl_weight: 10 
+detection_size: 32 
+# chunk_size: 34 
+hidden_dim: 512 
+batch_size: 8 
+dim_feedforward: 3200
+seed: 0
+num_epochs: 200
+lr: 0.00001
+temporal_agg: False
+folder_name: ACT
+
+
+
+train_option: ball_chair # ball_chair, ball, chair, dynamic
+horizon: 18 # 34, 18
+max_detection_num: 32
+max_trajectory_length: 115
+max_path_length: 100 # 105, 40
+n_timesteps: 10
+show: True
+condition_mode: pre # pre, post
+pred_mode: 3d # 2d, 3d
+
+# ball_chair can only use pre; ball can only use pre 2d
