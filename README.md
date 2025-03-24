@@ -1,4 +1,7 @@
 # wtr_nav_kt
+This repo includes the wheelchair imitation policy training code of the ICRA 2025 paper "Learning Wheelchair Tennis Navigation from Broadcast Videos with Domain Knowledge Transfer and Diffusion Motion Planning".
+* Author: Zixuan Wu*, Zulfiqar Zaidi*, Adithya Patil*, Qingyu Xiao and Matthew Gombolay
+
 ## Code Structure
 The main code is in the folder `wheelchair`.
 
@@ -9,6 +12,9 @@ The file `traj_preprocess_main.py` is used to process the raw trajectories extra
 The file `diffusion_image_space.py` is used to train the diffusion policy for the wheelchair. We load the data into the dataloader `BallWheelchairJointDataset` and then load the `GaussianDiffusion` to train the wheelchair imitation policy.
 
 You can set the configuration file  `chair_diffusion_train.yaml` in the folder `./config/diffusion_config`. The trained model will be save in `./ICRA_2025_logs/...`.
+
+## Package Requirements
+Please see `requirements.txt`.
 
 ## Citations
 * We adapt our diffusion model training code from [`Diffuser`](https://github.com/jannerm/diffuser) with the following citation:
