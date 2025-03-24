@@ -12,6 +12,6 @@ condition_mode: pre # pre, post
 is_sim: False
 replan_period: 15
 pred_mode: 2d
-train_set: ./data/real_image_traj/splited_processed_trajs/train/ # ./data/real_image_traj/automatic_processed_trajs/train/ # ./data/real_image_traj/splited_processed_trajs/train/
-valid_set: ./data/real_image_traj/splited_processed_trajs/valid/ # ./data/real_image_traj/automatic_processed_trajs/valid/ # ./data/real_image_traj/splited_processed_trajs/valid/
-test_set: ./data/real_image_traj/splited_processed_trajs/test/ # ./data/real_image_traj/automatic_processed_trajs/test/ # ./data/real_image_traj/splited_processed_trajs/test/
+train_set: ./real_image_traj/splited_processed_trajs/train/
+valid_set: ./real_image_traj/splited_processed_trajs/valid/
+test_set: ./real_image_traj/splited_processed_trajs/test/ 

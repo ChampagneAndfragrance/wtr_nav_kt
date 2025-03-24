@@ -77,8 +77,10 @@ class ConditionalResidualBlock1D(nn.Module):
             out = scale * out + bias # This is what happens in the paper
         else:
             out = out + embed
+
         # INFO: self.blocks are basically convolution layers (for input)
         out = self.blocks[1](out)
+
         # INFO: Residual Network!
         out = out + self.residual_conv(x)
         return out
@@ -235,9 +237,11 @@ class ConditionalUnet1D(nn.Module):
         global_cond: (B,global_cond_dim)
         output: (B,T,input_dim)
         """
+
+        # INFO: batch comes first, and channel comes second
         sample = einops.rearrange(sample, 'b h t -> b t h')
 
-        # INFO: encode diffusion steps into the global features
+        # INFO: encode diffusion timesteps into the global features
         timesteps = timestep
         if not torch.is_tensor(timesteps):
             # TODO: this requires sync between CPU and GPU. So try to pass timesteps as tensors if you can
@@ -251,17 +255,14 @@ class ConditionalUnet1D(nn.Module):
         global_feature = self.diffusion_step_encoder(timesteps)
 
         if global_cond is not None:
-            # if 'hideouts' in global_cond.keys():
-            #     global_feature = torch.cat([global_cond['hideouts'], global_feature], axis=-1)
-
             if 'detections' in global_cond.keys():
                 # INFO: encode the previous/post detections with LSTM
                 detections_encoded = self.lstm(global_cond['detections'])
                 global_feature = torch.cat([detections_encoded, global_feature], axis=-1)
                 # INFO: encode the start with FC
-            if 'red_start' in global_cond.keys():
-                prisoner_start_encoded = self.fc(global_cond['red_start'])
-                global_feature = torch.cat([prisoner_start_encoded, global_feature], axis=-1)
+            if 'motions_start' in global_cond.keys():
+                motion_start_encoded = self.fc(global_cond['motions_start'])
+                global_feature = torch.cat([motion_start_encoded, global_feature], axis=-1)
 
         if 'local_cond' in global_cond.keys():
             local_cond = global_cond['local_cond']
@@ -288,9 +289,11 @@ class ConditionalUnet1D(nn.Module):
             x = resnet2(x, global_feature)
             h.append(x)
             x = downsample(x)
-        # INFO: self.down_modules: [ConditionalResidualBlock1D, ConditionalResidualBlock1D]
+
+        # INFO: self.mid_modules: [ConditionalResidualBlock1D, ConditionalResidualBlock1D]
         for mid_module in self.mid_modules:
             x = mid_module(x, global_feature)
+
         # INFO: self.up_modules [ConditionalResidualBlock1D*2, Upsample1d]*N
         for idx, (resnet, resnet2, upsample) in enumerate(self.up_modules):
             x = torch.cat((x, h.pop()), dim=1)
@@ -299,6 +302,7 @@ class ConditionalUnet1D(nn.Module):
                 x = x + h_local[1]
             x = resnet2(x, global_feature)
             x = upsample(x)
+
         # INFO: conv block + conv
         x = self.final_conv(x)
 

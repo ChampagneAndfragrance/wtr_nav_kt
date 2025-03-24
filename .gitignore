@@ -161,11 +161,11 @@ cython_debug/
 #.idea/
 
 act-main/dataset
-CoRL_2024_logs/
+ICRA_2025_logs/
 *.pth
 *.webm
 *.pyc
-CoRL_2024_logs/
+ICRA_2025_logs/
 *.pth
 
 

@@ -19,7 +19,7 @@ Diffusion:
   
 ACT:
   onscreen_render: False
-  # ckpt_dir: ./CoRL_2024_logs/ACT/wheelchair
+  # ckpt_dir: ./ICRA_2025_logs/ACT/wheelchair
   policy_class: ACT 
   task_name: sim_wheelchair_nav
   kl_weight: 10 

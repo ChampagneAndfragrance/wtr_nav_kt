@@ -2,20 +2,7 @@
 # import wandb
 import os, sys
 sys.path.append(os.getcwd())
-
 import numpy as np
-import torch
-from torch.optim import Adam
-from tqdm import tqdm
-from diffuser.datasets.multipath import BallWheelchairJointDataset
-from diffuser.graders.traj_graders import joint_traj_grader
-from diffuser.models.diffusion import GaussianDiffusion
-from diffuser.models.temporal_film import ConditionalUnet1D
-from torch.utils.tensorboard import SummaryWriter
-from matplotlib import pyplot as plt
-import argparse
-import random
-import time
 
 def get_start_end_failure_num(positions):
 
@@ -98,8 +85,6 @@ def preprocess_traj(txt_folder_name, npz_folder_name, undetect_process_mode):
         if undetect_process_mode == "skip":
             valid_indices = np.where(np.all(ball_2d_positions != np.array([-1, -1]), axis=1))
             valid_data_num = valid_indices[0].shape[0]
-            # print("res:", ball_positions == np.array([-1, -1]))
-            # print("invalid_idx: ", invalid_idx)
 
             # INFO: Extract the valid datapoints
             wheelchair_3d_positions = wheelchair_3d_positions[valid_indices[0], :]
@@ -155,7 +140,7 @@ def preprocess_traj(txt_folder_name, npz_folder_name, undetect_process_mode):
                 chair_3d_locations=wheelchair_3d_positions,)
 
 if __name__ == "__main__":  
-    txt_folder_name = "./data/real_image_traj/splited_raw_trajs/automatic/" # "./data/real_image_traj/splited_raw_trajs/global/"
-    npz_folder_name = "./data/real_image_traj/automatic_processed_trajs/" # "./data/real_image_traj/splited_processed_trajs/"
+    txt_folder_name = "./real_image_traj/splited_raw_trajs/"
+    npz_folder_name = "./real_image_traj/splited_processed_trajs/"
     undetect_process_mode = "interpolate"
     preprocess_traj(txt_folder_name, npz_folder_name, undetect_process_mode)

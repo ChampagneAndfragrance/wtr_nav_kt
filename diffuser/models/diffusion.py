@@ -15,43 +15,6 @@ from .helpers import (
     Losses,
 )
 
-# def smoothness_loss(traj):
-#     """ traj is with the size of torch.Size([batch_size, seq_len, feature_num]) and homography_mat is with the size of []"""
-#     PX_TO_M = 0.009820948970456581
-#     homography_mat = torch.Tensor([[3.147, 3.669, -1858.189], [1.209e-15, 21.792, -4087.629], [4.486e-19, 0.00443, 0.170]])
-#     unnormalized_traj = ((traj + 1) / 2) * torch.Tensor([1280, 720])
-#     ones_mat = torch.ones((unnormalized_traj.shape[0], unnormalized_traj.shape[1], 1))
-#     wheelchair_2d = torch.cat((unnormalized_traj, ones_mat), dim=-1)
-#     wheelchair_x_loc = torch.sum(homography_mat[0]*wheelchair_2d, dim=-1) / torch.sum(homography_mat[2]*wheelchair_2d, dim=-1)
-#     wheelchair_y_loc = torch.sum(homography_mat[1]*wheelchair_2d, dim=-1) / torch.sum(homography_mat[2]*wheelchair_2d, dim=-1)  
-#     bottom_2d = torch.Tensor([636, 522, 1]).view(1, 1, -1).repeat(traj.shape[0], traj.shape[1], 1)
-#     bottom_x_loc = torch.sum(homography_mat[0]*bottom_2d, dim=-1) / torch.sum(homography_mat[2]*bottom_2d, dim=-1)
-#     bottom_y_loc = torch.sum(homography_mat[1]*bottom_2d, dim=-1) / torch.sum(homography_mat[2]*bottom_2d, dim=-1) 
-
-#     # INFO: wheelchair x and y coords in the 3D world system
-#     wheelchair_pos_x_world = -(wheelchair_y_loc - bottom_y_loc) * PX_TO_M 
-#     wheelchair_pos_y_world = (wheelchair_x_loc - bottom_x_loc) * PX_TO_M
-
-#     # INFO: wheelchair theta in the 3D world system
-            
-#     # INFO: wheelchair x and y velocity in the 3D world system
-#     wheelchair_vel_x_world = wheelchair_pos_x_world[:,1:] - wheelchair_pos_x_world[:,:-1]
-#     wheelchair_vel_y_world = wheelchair_pos_y_world[:,1:] - wheelchair_pos_y_world[:,:-1]
-#     theta = torch.atan2(wheelchair_vel_y_world, wheelchair_vel_x_world)
-#     omega = theta[:,1:] - theta[:,:-1]
-#     # Change the range to [0, π] by adding or subtracting π
-#     angles_mod = (omega + 2*torch.pi) % (2*torch.pi)
-#     # For negative angles, subtract from 2π to bring them to the [0, 2π] range
-#     angles_mod = angles_mod - (torch.pi) * (angles_mod > torch.pi)
-#     # INFO: wheelchair x and y acceleration in the 3D world system
-#     wheelchair_acc_x_world = wheelchair_vel_x_world[:,1:] - wheelchair_vel_x_world[:,:-1]
-#     wheelchair_acc_y_world = wheelchair_vel_y_world[:,1:] - wheelchair_vel_y_world[:,:-1]
-    
-
-#     smoothness_out = wheelchair_acc_x_world**2 + wheelchair_acc_y_world**2 + 1*omega**2
-#     smoothness_out = torch.sqrt(smoothness_out.sum(dim=-1))
-#     return smoothness_out.mean()
-
 def smoothness_loss(traj):
     smoothness_out = (traj[:, :-1, :] - traj[:, 1:, :])**2
     smoothness_out = torch.sqrt(smoothness_out.sum(dim=-1))
@@ -69,7 +32,6 @@ def constraint_loss(traj, conditions):
     c_loss = 0
     for b, conditions in enumerate(conditions):
         if len(conditions[0]) > 0: # if there are conditions
-            # traj[b, conditions[0]] = torch.tensor(conditions[1], dtype=x.dtype).to(x.device)
             d = (traj[b, conditions[0]] - torch.tensor(conditions[1], dtype=traj.dtype).to(traj.device)) ** 2
             d = torch.sqrt(d.sum(dim=-1))
             c_loss += d.mean()
@@ -193,7 +155,7 @@ class GaussianDiffusion(nn.Module):
         return posterior_mean, posterior_variance, posterior_log_variance_clipped
 
     def p_mean_variance(self, x, cond, t, global_cond):
-        x_recon = self.predict_start_from_noise(x, t=t, noise=self.model(x, t, global_cond=global_cond))
+        x_recon = self.predict_start_from_noise(x, t=t, noise=self.model(x, t, global_cond=global_cond)) # if not self.predict_epsilon, then just output noise=model()
 
         if self.clip_denoised:
             x_recon.clamp_(-1., 1.)
@@ -258,25 +220,14 @@ class GaussianDiffusion(nn.Module):
 
         model_mean = model_mean.clone().detach()
         model_mean.requires_grad_()
-        # chair_mean = model_mean[...,0:2]
-        # blue_mean = model_mean[...,2:]
         optimizer = torch.optim.Adam([model_mean], lr=1e-2)
         losses = []
         for i in range(10):
             optimizer.zero_grad()
-            # l = 50 * mountain_loss(red_mean) + 0 * smoothness_loss(red_mean)
-            l = 0.1 * smoothness_loss(model_mean) # + 0 * detection_loss(red_mean[...,::constraint_scale,:].reshape(1, -1), estimator)
-            # print(d)       
+            l = 0.1 * smoothness_loss(model_mean)
             l.backward()
             optimizer.step()
-            # losses.append(l.item())
-            # model_mean = apply_conditioning(model_mean, cond, self.action_dim)
 
-        # adjust_mean = self.compute_constraint_gradient(x, cond) * constraint_scale
-        # adjust_mean = adjust_mean * constraint_scale * (nonzero_mask * (0.5 * model_log_variance).exp())
-
-        # try alternating between sampling from the model and sampling from the constraint
-        # if i % 2 != 0:
         return model_mean + nonzero_mask * (0.5 * model_log_variance).exp() * noise    
 
     def gradient_adjust(self, x, estimator=None, constraint_scale = 1):
@@ -306,15 +257,17 @@ class GaussianDiffusion(nn.Module):
 
     @torch.no_grad()
     def p_sample_loop_original(self, shape, global_cond, cond, verbose=True, return_diffusion=False):
-        device = self.betas.device
+        device = self.betas.device # device - CPU or GPU?
 
         batch_size = shape[0]
         x = torch.randn(shape, device=device)
         x = apply_conditioning(x, cond, self.action_dim)
 
-        if return_diffusion: diffusion = [x]
+        if return_diffusion: diffusion = [x] # if we return the full diffusion denoising process
 
         progress = utils.Progress(self.n_timesteps) if verbose else utils.Silent()
+
+        # INFO: inverse play the denoising process
         for i in reversed(range(0, self.n_timesteps)):
             timesteps = torch.full((batch_size,), i, device=device, dtype=torch.long)
             x = self.p_sample(x, global_cond, cond, timesteps)
@@ -323,20 +276,6 @@ class GaussianDiffusion(nn.Module):
             progress.update({'t': i})
 
             if return_diffusion: diffusion.append(x)
-
-        # if i == self.n_timesteps // 2:
-        # terminal_state = x[:, -1, :]
-        # cond = [[[cond[i][0][0], np.array([-1])], [cond[0][1][0], terminal_state[i, :].detach().cpu().numpy()]] for i in range(len(cond))]
-
-
-        # for i in reversed(range(0, self.n_timesteps)):
-        #     timesteps = torch.full((batch_size,), i, device=device, dtype=torch.long)
-        #     x = self.p_sample(x, global_cond, cond, timesteps)
-        #     x = apply_conditioning(x, cond, self.action_dim)
-
-        #     progress.update({'t': i})
-
-        #     if return_diffusion: diffusion.append(x)
                 
         progress.close()
 
@@ -475,7 +414,6 @@ class GaussianDiffusion(nn.Module):
         batch_size = len(cond)
         horizon = horizon or self.horizon
         shape = (batch_size, horizon, self.transition_dim)
-        # global_cond = global_cond.to(device)
         global_cond = {k: v.to(device) for k, v in global_cond.items()}
 
         return self.p_sample_loop(shape, global_cond, cond, estimator, return_diffusion, *args, **kwargs)
@@ -495,10 +433,10 @@ class GaussianDiffusion(nn.Module):
 
     def p_losses(self, x_start, global_cond, cond, t):
 
-        # INFO: start from gaussian noise
+        # INFO: sample a Gaussian
         noise = torch.randn_like(x_start)
 
-        # INFO: add noise to the sample
+        # INFO: forward process - we can sample from the start timestep to any timestep described by t
         x_noisy = self.q_sample(x_start=x_start, t=t, noise=noise)
         x_noisy = apply_conditioning(x_noisy, cond, self.action_dim)
 
@@ -516,12 +454,10 @@ class GaussianDiffusion(nn.Module):
         return loss, info
 
     def loss(self, x, global_cond, cond):
-        x = x.to(self.betas.device)
-        # INFO: Move tensors to device, GPU/CPU
-        global_cond = {k: v.to(self.betas.device) for k, v in global_cond.items()}
-        # global_cond = global_cond.to(self.betas.device)
-        batch_size = len(x)
-        t = torch.randint(0, self.n_timesteps, (batch_size,), device=x.device).long()
+        x = x.to(self.betas.device) # ground truth future trajectory
+        global_cond = {k: v.to(self.betas.device) for k, v in global_cond.items()} # Move tensors to device, GPU/CPU
+        batch_size = len(x) # batch size
+        t = torch.randint(0, self.n_timesteps, (batch_size,), device=x.device).long() # return the random diffusion timesteps of each batch 
         return self.p_losses(x, global_cond, cond, t)
 
     def forward(self, cond, *args, **kwargs):
